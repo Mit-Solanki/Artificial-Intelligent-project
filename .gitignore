@@ -1,0 +1,12 @@
+archive (1)/
+.ipynb_checkpoints/
+bidmc/
+comparison_data/
+mit-bih-arrhythmia-database-1.0.0/
+my_folder/
+X_final.npy
+X_mit.npy
+y_final.npy
+y_mit.npy
+X_vfdb.npy
+y_vfdb.npy

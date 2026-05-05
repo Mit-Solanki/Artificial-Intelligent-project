@@ -1,0 +1,377 @@
+/* =============================================
+   ECG Analyser — style.css
+   ============================================= */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --green:        #1D9E75;
+  --green-light:  #E1F5EE;
+  --green-dark:   #0F6E56;
+  --amber:        #EF9F27;
+  --amber-light:  #FAEEDA;
+  --amber-dark:   #854F0B;
+  --red:          #E24B4A;
+  --red-light:    #FCEBEB;
+  --red-dark:     #A32D2D;
+  --gray-50:      #F7F6F3;
+  --gray-100:     #EDEBE5;
+  --gray-200:     #D3D1C7;
+  --gray-400:     #888780;
+  --gray-600:     #5F5E5A;
+  --gray-800:     #2C2C2A;
+  --text-primary: #1a1a18;
+  --text-muted:   #5F5E5A;
+  --text-hint:    #888780;
+  --border:       rgba(0,0,0,0.10);
+  --border-hover: rgba(0,0,0,0.20);
+  --radius-sm:    8px;
+  --radius-md:    12px;
+  --radius-lg:    16px;
+  --font-sans:    'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono:    'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+  --shadow-sm:    0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:    0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--gray-50);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* ---- Page background with subtle ECG pattern ---- */
+.page-bg {
+  min-height: 100vh;
+  background:
+    linear-gradient(135deg, #f0faf5 0%, #f7f6f3 50%, #fef9f0 100%);
+  padding: 2rem 1rem;
+}
+
+/* ---- Container ---- */
+.container {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+/* ---- Header ---- */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 2rem;
+}
+
+.header-icon {
+  width: 52px;
+  height: 52px;
+  background: white;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+
+.header-title {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  color: var(--text-primary);
+}
+
+.header-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ---- Section labels ---- */
+.section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-hint);
+  margin-bottom: 10px;
+}
+
+/* ---- Vitals grid ---- */
+.vitals-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 1.75rem;
+}
+
+.vital-card {
+  background: white;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s;
+}
+
+.vital-card:focus-within {
+  border-color: var(--green);
+}
+
+.vital-card label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-hint);
+  margin-bottom: 6px;
+}
+
+.vital-card input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 26px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.vital-card input::-webkit-inner-spin-button,
+.vital-card input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+
+.unit {
+  font-size: 11px;
+  color: var(--text-hint);
+  display: block;
+  margin-top: 4px;
+}
+
+/* ---- Signal card ---- */
+.signal-card {
+  background: white;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 1.25rem;
+  transition: border-color 0.15s;
+}
+
+.signal-card:focus-within {
+  border-color: var(--green);
+}
+
+.signal-card textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 12.5px;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  resize: vertical;
+  min-height: 90px;
+  line-height: 1.7;
+}
+
+.signal-card textarea::placeholder {
+  color: var(--text-hint);
+}
+
+.signal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  border-top: 0.5px solid var(--border);
+  padding-top: 8px;
+}
+
+.signal-meta {
+  font-size: 11px;
+  color: var(--text-hint);
+  font-family: var(--font-mono);
+}
+
+.demo-btn {
+  font-size: 11px;
+  color: var(--green-dark);
+  background: var(--green-light);
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  transition: opacity 0.15s;
+}
+
+.demo-btn:hover { opacity: 0.8; }
+
+.error-msg {
+  font-size: 12px;
+  color: var(--red);
+  margin-top: 8px;
+  display: none;
+}
+
+.error-msg.show {
+  display: block;
+}
+
+/* ---- Analyse button ---- */
+.analyze-btn {
+  width: 100%;
+  padding: 14px;
+  border: 0.5px solid var(--border-hover);
+  border-radius: var(--radius-md);
+  background: var(--text-primary);
+  color: white;
+  font-size: 15px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  cursor: pointer;
+  margin-bottom: 1.75rem;
+  transition: opacity 0.15s, transform 0.1s;
+  letter-spacing: 0.01em;
+}
+
+.analyze-btn:hover { opacity: 0.88; }
+.analyze-btn:active { transform: scale(0.99); }
+
+/* ---- Loader ---- */
+.btn-loader {
+  display: inline-block;
+}
+
+.hidden { display: none !important; }
+
+/* ---- Result card ---- */
+.result-card {
+  border-radius: var(--radius-lg);
+  border: 0.5px solid var(--border);
+  padding: 20px 22px;
+  background: white;
+  box-shadow: var(--shadow-md);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* level variants */
+.result-card.level-normal { border-color: var(--green); background: var(--green-light); }
+.result-card.level-warning { border-color: var(--amber); background: var(--amber-light); }
+.result-card.level-danger  { border-color: var(--red);   background: var(--red-light);   }
+
+/* ---- Waveform ---- */
+.waveform {
+  width: 100%;
+  height: 60px;
+  display: block;
+  margin-bottom: 14px;
+}
+
+.divider {
+  border: none;
+  border-top: 0.5px solid var(--border);
+  margin: 10px 0 14px;
+}
+
+/* ---- Result header ---- */
+.result-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.result-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.badge-normal  { background: var(--green);      color: white; }
+.badge-warning { background: var(--amber);      color: white; }
+.badge-danger  { background: var(--red);        color: white; }
+
+.result-status {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+.status-normal  { color: var(--green-dark); }
+.status-warning { color: var(--amber-dark); }
+.status-danger  { color: var(--red-dark); }
+
+.result-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+/* ---- Detail pills ---- */
+.result-details {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.detail-pill {
+  font-size: 12.5px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: white;
+  border: 0.5px solid var(--border);
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.detail-pill .pill-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-hint);
+  margin-bottom: 2px;
+}
+
+.detail-pill .pill-value {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.pill-ok    { border-left: 3px solid var(--green); }
+.pill-warn  { border-left: 3px solid var(--amber); }
+.pill-bad   { border-left: 3px solid var(--red); }
+
+/* ---- Responsive ---- */
+@media (max-width: 480px) {
+  .vitals-grid { grid-template-columns: 1fr; }
+  .result-details { grid-template-columns: 1fr; }
+  .header-title { font-size: 22px; }
+}

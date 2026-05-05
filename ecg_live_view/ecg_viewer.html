@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VitalSence — Live ECG Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #080c10;
+    --bg2: #0d1318;
+    --bg3: #111820;
+    --panel: #0f1822;
+    --border: #1a2a38;
+    --accent: #00e5a0;
+    --accent2: #00b8ff;
+    --accent3: #ff4466;
+    --warn: #ffb830;
+    --text: #cde8f0;
+    --muted: #4a6a7a;
+    --dim: #1e3040;
+    --mono: 'Share Tech Mono', monospace;
+    --head: 'Rajdhani', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--head);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* Vignette */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.6) 100%);
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    position: relative;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 36px; height: 36px;
+    position: relative;
+  }
+
+  .logo-icon svg { width: 100%; height: 100%; }
+
+  .logo-text {
+    font-family: var(--head);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #fff;
+  }
+
+  .logo-text span { color: var(--accent); }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .time-display {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  #clock { color: var(--accent2); }
+
+  /* status pill */
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 2px;
+    border: 1px solid;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: all 0.3s;
+  }
+
+  .status-pill.demo { border-color: var(--warn); color: var(--warn); }
+  .status-pill.connected { border-color: var(--accent); color: var(--accent); }
+  .status-pill.disconnected { border-color: var(--accent3); color: var(--accent3); }
+
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: blink 1.2s infinite;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* ─── LAYOUT ─── */
+  .container {
+    display: grid;
+    grid-template-columns: 220px 1fr 220px;
+    grid-template-rows: auto auto auto;
+    gap: 1px;
+    background: var(--border);
+    min-height: calc(100vh - 62px);
+  }
+
+  .panel {
+    background: var(--panel);
+    padding: 1.25rem;
+  }
+
+  .panel-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ─── VITALS SIDEBAR ─── */
+  .sidebar-left {
+    grid-column: 1;
+    grid-row: 1 / 4;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .vital-block {
+    background: var(--panel);
+    padding: 1.25rem;
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .vital-block::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+  }
+
+  .vital-block.warn::before { background: var(--warn); }
+  .vital-block.danger::before { background: var(--accent3); }
+  .vital-block.info::before { background: var(--accent2); }
+
+  .vital-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .vital-value {
+    font-family: var(--mono);
+    font-size: 36px;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--accent);
+    transition: color 0.3s;
+  }
+
+  .vital-block.warn .vital-value { color: var(--warn); }
+  .vital-block.danger .vital-value { color: var(--accent3); }
+  .vital-block.info .vital-value { color: var(--accent2); }
+
+  .vital-unit {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
+
+  .mini-bar {
+    margin-top: 10px;
+    height: 3px;
+    background: var(--dim);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .mini-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  .vital-block.warn .mini-bar-fill { background: var(--warn); }
+  .vital-block.danger .mini-bar-fill { background: var(--accent3); }
+  .vital-block.info .mini-bar-fill { background: var(--accent2); }
+
+  /* ─── MAIN ECG ─── */
+  .main-area {
+    grid-column: 2;
+    grid-row: 1 / 4;
+    display: flex;
+    flex-direction: column;
+    background: var(--border);
+    gap: 1px;
+  }
+
+  .ecg-container {
+    background: var(--bg);
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ECG grid lines */
+  .ecg-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,160,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,160,0.04) 1px, transparent 1px),
+      linear-gradient(rgba(0,229,160,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,160,0.02) 1px, transparent 1px);
+    background-size: 50px 50px, 50px 50px, 10px 10px, 10px 10px;
+    pointer-events: none;
+  }
+
+  #ecgCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Sweep line glow */
+  #sweepLine {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, transparent, var(--accent), transparent);
+    opacity: 0.6;
+    pointer-events: none;
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  .ecg-label-y {
+    position: absolute;
+    left: 8px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    pointer-events: none;
+  }
+
+  .channel-tag {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  /* mini sparkline strip */
+  .sparkline-panel {
+    background: var(--panel);
+    height: 70px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #sparkCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+  }
+
+  .spark-label {
+    position: absolute;
+    left: 10px; top: 8px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* toolbar */
+  .toolbar {
+    background: var(--bg2);
+    padding: 0.75rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tb-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .tb-input {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 2px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .tb-input:focus { border-color: var(--accent2); }
+
+  .tb-select {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 5px 8px;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .btn {
+    font-family: var(--head);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 18px;
+    border: 1px solid;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+
+  .btn-connect { border-color: var(--accent2); color: var(--accent2); }
+  .btn-connect:hover { background: rgba(0,184,255,0.1); }
+  .btn-connect.active { background: rgba(0,184,255,0.15); border-color: var(--accent2); }
+
+  .btn-record { border-color: var(--accent3); color: var(--accent3); }
+  .btn-record:hover { background: rgba(255,68,102,0.1); }
+  .btn-record.recording { background: rgba(255,68,102,0.15); animation: rec-pulse 1s infinite; }
+
+  @keyframes rec-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(255,68,102,0.4)} 50%{box-shadow:0 0 0 6px rgba(255,68,102,0)} }
+
+  .btn-clear { border-color: var(--muted); color: var(--muted); }
+  .btn-clear:hover { border-color: var(--text); color: var(--text); }
+
+  .divider { width: 1px; height: 24px; background: var(--border); }
+
+  /* ─── RIGHT SIDEBAR ─── */
+  .sidebar-right {
+    grid-column: 3;
+    grid-row: 1 / 4;
+    display: flex;
+    flex-direction: column;
+    background: var(--border);
+    gap: 1px;
+  }
+
+  /* Log panel */
+  .log-panel {
+    background: var(--panel);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .log-panel .panel-label { margin: 1.25rem 1.25rem 0; padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 0; }
+
+  .log-entries {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.75rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .log-entries::-webkit-scrollbar { width: 4px; }
+  .log-entries::-webkit-scrollbar-track { background: var(--bg); }
+  .log-entries::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 2px; }
+
+  .log-entry {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    line-height: 1.5;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .log-time { color: var(--dim); flex-shrink: 0; }
+  .log-entry.ok .log-msg { color: var(--accent); }
+  .log-entry.warn .log-msg { color: var(--warn); }
+  .log-entry.err .log-msg { color: var(--accent3); }
+  .log-entry.info .log-msg { color: var(--accent2); }
+
+  /* FFT mini panel */
+  .fft-panel {
+    background: var(--panel);
+    padding: 1rem;
+    height: 140px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #fftCanvas {
+    position: absolute;
+    inset: 1rem;
+    width: calc(100% - 2rem);
+    height: calc(100% - 2rem);
+  }
+
+  /* Label strip panel */
+  .label-panel {
+    background: var(--panel);
+    padding: 1.25rem;
+  }
+
+  .label-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .label-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--muted);
+    cursor: pointer;
+    border-radius: 2px;
+    text-align: left;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .label-btn:hover { border-color: var(--accent2); color: var(--text); }
+  .label-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,229,160,0.05); }
+  .label-btn.stress.active { border-color: var(--accent3); color: var(--accent3); background: rgba(255,68,102,0.05); }
+  .label-btn.relaxed.active { border-color: var(--accent); color: var(--accent); background: rgba(0,229,160,0.05); }
+  .label-btn.normal.active { border-color: var(--accent2); color: var(--accent2); background: rgba(0,184,255,0.05); }
+
+  .label-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+  /* Bridge instructions */
+  .bridge-panel {
+    background: var(--panel);
+    padding: 1.25rem;
+  }
+
+  .code-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent2);
+    letter-spacing: 0.5px;
+    line-height: 1.7;
+    margin-top: 10px;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  /* Footer */
+  footer {
+    grid-column: 1 / 4;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    padding: 0.5rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .footer-right { display: flex; gap: 2rem; }
+
+  /* Pulse animation on the ECG value */
+  @keyframes pulse-green {
+    0% { text-shadow: 0 0 0 transparent; }
+    50% { text-shadow: 0 0 12px var(--accent); }
+    100% { text-shadow: 0 0 0 transparent; }
+  }
+
+  .pulse { animation: pulse-green 0.2s ease; }
+
+  /* Alert overlay */
+  .alert-banner {
+    display: none;
+    position: fixed;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg2);
+    border: 1px solid var(--accent3);
+    color: var(--accent3);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 2px;
+    padding: 10px 24px;
+    border-radius: 2px;
+    z-index: 900;
+    animation: slideUp 0.3s ease;
+    text-transform: uppercase;
+  }
+
+  @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+</style>
+</head>
+<body>
+
+<!-- ─── HEADER ─── -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 36 36" fill="none">
+        <rect width="36" height="36" rx="3" fill="#0d1318"/>
+        <polyline points="2,18 8,18 11,8 14,28 17,14 20,22 23,18 34,18"
+          stroke="#00e5a0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="logo-text">Aura<span>Pulse</span></div>
+  </div>
+  <div class="header-right">
+    <div class="time-display">SYS TIME &nbsp;<span id="clock">--:--:--</span></div>
+    <div class="time-display">PORT &nbsp;<span style="color:var(--accent2)">COM23</span></div>
+    <div class="time-display">BAUD &nbsp;<span style="color:var(--accent2)">115200</span></div>
+    <div class="status-pill demo" id="statusPill">
+      <div class="dot"></div>
+      <span id="statusText">DEMO</span>
+    </div>
+  </div>
+</header>
+
+<!-- ─── MAIN GRID ─── -->
+<div class="container">
+
+  <!-- LEFT SIDEBAR -->
+  <div class="sidebar-left">
+    <div class="vital-block">
+      <div class="vital-label">// ECG VALUE</div>
+      <div class="vital-value" id="vCurrent">—</div>
+      <div class="vital-unit">RAW ADC (0–1023)</div>
+      <div class="mini-bar"><div class="mini-bar-fill" id="barCurrent" style="width:50%"></div></div>
+    </div>
+    <div class="vital-block warn">
+      <div class="vital-label">// PEAK</div>
+      <div class="vital-value" id="vPeak">—</div>
+      <div class="vital-unit">SESSION HIGH</div>
+      <div class="mini-bar"><div class="mini-bar-fill" id="barPeak" style="width:80%"></div></div>
+    </div>
+    <div class="vital-block danger">
+      <div class="vital-label">// MINIMUM</div>
+      <div class="vital-value" id="vMin">—</div>
+      <div class="vital-unit">SESSION LOW</div>
+      <div class="mini-bar"><div class="mini-bar-fill" id="barMin" style="width:20%"></div></div>
+    </div>
+    <div class="vital-block info">
+      <div class="vital-label">// SAMPLE RATE</div>
+      <div class="vital-value" id="vSps">—</div>
+      <div class="vital-unit">SAMPLES / SEC</div>
+      <div class="mini-bar"><div class="mini-bar-fill" id="barSps" style="width:0%"></div></div>
+    </div>
+    <div class="vital-block info" style="--accent:var(--accent2)">
+      <div class="vital-label">// TOTAL SAMPLES</div>
+      <div class="vital-value" id="vTotal" style="color:var(--accent2);font-size:28px">0</div>
+      <div class="vital-unit">POINTS CAPTURED</div>
+    </div>
+  </div>
+
+  <!-- MAIN ECG AREA -->
+  <div class="main-area">
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <div class="toolbar-group">
+        <span class="tb-label">WS URL</span>
+        <input class="tb-input" id="wsUrl" type="text" value="ws://localhost:8765" style="width:180px"/>
+      </div>
+      <button class="btn btn-connect" id="connectBtn" onclick="toggleConnect()">Connect</button>
+      <div class="divider"></div>
+      <div class="toolbar-group">
+        <span class="tb-label">Window</span>
+        <select class="tb-select" id="windowSel" onchange="updateWindow()">
+          <option value="200">200 pts</option>
+          <option value="500" selected>500 pts</option>
+          <option value="1000">1000 pts</option>
+          <option value="2000">2000 pts</option>
+        </select>
+      </div>
+      <div class="toolbar-group">
+        <span class="tb-label">Speed</span>
+        <select class="tb-select" id="speedSel">
+          <option value="1">×1</option>
+          <option value="2">×2</option>
+          <option value="0.5">×0.5</option>
+        </select>
+      </div>
+      <div class="divider"></div>
+      <button class="btn btn-record" id="recordBtn" onclick="toggleRecord()">● Rec</button>
+      <button class="btn btn-clear" onclick="clearAll()">Clear</button>
+      <button class="btn btn-clear" onclick="toggleDemo()">Demo</button>
+    </div>
+
+    <!-- MAIN CANVAS -->
+    <div class="ecg-container" style="flex:1">
+      <div class="ecg-grid"></div>
+      <canvas id="ecgCanvas"></canvas>
+      <div id="sweepLine"></div>
+      <div class="ecg-label-y" style="top:8px">1023</div>
+      <div class="ecg-label-y" style="top:calc(50% - 8px)">511</div>
+      <div class="ecg-label-y" style="bottom:8px">0</div>
+      <div class="channel-tag">CH1 · AD8232</div>
+    </div>
+
+    <!-- SPARKLINE -->
+    <div class="sparkline-panel">
+      <div class="spark-label">30-SEC OVERVIEW</div>
+      <canvas id="sparkCanvas"></canvas>
+    </div>
+
+  </div>
+
+  <!-- RIGHT SIDEBAR -->
+  <div class="sidebar-right">
+
+    <!-- LABEL PANEL -->
+    <div class="label-panel">
+      <div class="panel-label">// Session Label</div>
+      <div class="label-btns">
+        <button class="label-btn stress" id="lbl-stress" onclick="setLabel('stress')">
+          <div class="label-dot"></div> Stress
+        </button>
+        <button class="label-btn relaxed active" id="lbl-relaxed" onclick="setLabel('relaxed')">
+          <div class="label-dot"></div> Relaxed
+        </button>
+        <button class="label-btn normal" id="lbl-normal" onclick="setLabel('normal')">
+          <div class="label-dot"></div> Normal
+        </button>
+      </div>
+    </div>
+
+    <!-- FFT PANEL -->
+    <div class="fft-panel">
+      <div class="panel-label" style="margin:0 0 8px">// Frequency Spectrum</div>
+      <canvas id="fftCanvas"></canvas>
+    </div>
+
+    <!-- LOG PANEL -->
+    <div class="log-panel">
+      <div class="panel-label">// Event Log</div>
+      <div class="log-entries" id="logEntries"></div>
+    </div>
+
+    <!-- BRIDGE INSTRUCTIONS -->
+    <div class="bridge-panel">
+      <div class="panel-label">// Bridge Setup</div>
+      <div class="code-block">pip install websockets pyserial
+
+# ecg_bridge.py
+import serial, asyncio, websockets
+PORT = "COM23"; BAUD = 115200
+
+async def stream(ws):
+  ser = serial.Serial(PORT, BAUD)
+  while True:
+    l = ser.readline().decode()
+    if "Raw_ECG:" in l:
+      v = l.split(',')[0].split(':')[1]
+      await ws.send(v.strip())
+
+async def main():
+  async with websockets.serve(
+    stream, "localhost", 8765):
+    await asyncio.Future()
+
+asyncio.run(main())</div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <span>VitalSence ECG MONITOR v1.0 · MCU MAKER UNO · AD8232</span>
+  <div class="footer-right">
+    <span id="footLabel">LABEL: RELAXED</span>
+    <span id="footRecording">REC: OFF</span>
+    <span id="footSamples">SAMPLES: 0</span>
+  </div>
+</footer>
+
+<div class="alert-banner" id="alertBanner"></div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────
+let buf = [], MAX = 500;
+let peak = -Infinity, minVal = Infinity;
+let totalSamples = 0, spsCount = 0, sps = 0;
+let lastSecond = Date.now();
+let ws = null, connected = false;
+let demoMode = true, demoTimer = null;
+let recording = false, recordedData = [];
+let currentLabel = 'relaxed';
+let sweepPos = 0;
+let animFrame;
+
+// ─── CANVAS SETUP ────────────────────────────────────────────────
+const ecgCanvas = document.getElementById('ecgCanvas');
+const ctx = ecgCanvas.getContext('2d');
+const sparkCanvas = document.getElementById('sparkCanvas');
+const sCtx = sparkCanvas.getContext('2d');
+const fftCanvas = document.getElementById('fftCanvas');
+const fCtx = fftCanvas.getContext('2d');
+
+function resizeCanvases() {
+  const ecgEl = ecgCanvas.parentElement;
+  ecgCanvas.width = ecgEl.offsetWidth;
+  ecgCanvas.height = ecgEl.offsetHeight;
+  sparkCanvas.width = sparkCanvas.parentElement.offsetWidth;
+  sparkCanvas.height = sparkCanvas.parentElement.offsetHeight;
+  fftCanvas.width = fftCanvas.parentElement.offsetWidth - 32;
+  fftCanvas.height = fftCanvas.parentElement.offsetHeight - 40;
+}
+
+window.addEventListener('resize', resizeCanvases);
+setTimeout(resizeCanvases, 100);
+
+// ─── CLOCK ───────────────────────────────────────────────────────
+function updateClock() {
+  document.getElementById('clock').textContent = new Date().toTimeString().slice(0,8);
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ─── LOG ─────────────────────────────────────────────────────────
+function log(msg, type='info') {
+  const entries = document.getElementById('logEntries');
+  const t = new Date().toTimeString().slice(0,8);
+  const div = document.createElement('div');
+  div.className = 'log-entry ' + type;
+  div.innerHTML = `<span class="log-time">${t}</span><span class="log-msg">${msg}</span>`;
+  entries.appendChild(div);
+  entries.scrollTop = entries.scrollHeight;
+  if (entries.children.length > 60) entries.removeChild(entries.firstChild);
+}
+
+// ─── DATA POINT ──────────────────────────────────────────────────
+function addPoint(v) {
+  v = Math.max(0, Math.min(1023, parseInt(v)));
+  if (isNaN(v)) return;
+
+  buf.push(v);
+  if (buf.length > MAX) buf.shift();
+  totalSamples++;
+  spsCount++;
+
+  if (v > peak) { peak = v; }
+  if (v < minVal) { minVal = v; }
+
+  if (recording) recordedData.push({ t: Date.now(), v, label: currentLabel });
+
+  const now = Date.now();
+  if (now - lastSecond >= 1000) {
+    sps = spsCount; spsCount = 0; lastSecond = now;
+    document.getElementById('vSps').textContent = sps;
+    document.getElementById('barSps').style.width = Math.min(100, sps / 2) + '%';
+  }
+
+  // Update vitals
+  document.getElementById('vCurrent').textContent = v;
+  document.getElementById('barCurrent').style.width = (v / 1023 * 100) + '%';
+  document.getElementById('vPeak').textContent = peak === -Infinity ? '—' : peak;
+  document.getElementById('barPeak').style.width = peak === -Infinity ? '0%' : (peak / 1023 * 100) + '%';
+  document.getElementById('vMin').textContent = minVal === Infinity ? '—' : minVal;
+  document.getElementById('barMin').style.width = minVal === Infinity ? '0%' : (minVal / 1023 * 100) + '%';
+  document.getElementById('vTotal').textContent = totalSamples.toLocaleString();
+  document.getElementById('footSamples').textContent = 'SAMPLES: ' + totalSamples.toLocaleString();
+}
+
+// ─── DRAW ECG ────────────────────────────────────────────────────
+function drawECG() {
+  const W = ecgCanvas.width, H = ecgCanvas.height;
+  ctx.clearRect(0, 0, W, H);
+  if (buf.length < 2) { requestAnimationFrame(drawECG); return; }
+
+  // Fade trailing fill
+  ctx.fillStyle = 'rgba(8,12,16,0.0)';
+  ctx.fillRect(0, 0, W, H);
+
+  const pad = 20;
+  const mn = Math.min(...buf), mx = Math.max(...buf);
+  const range = mx - mn || 1;
+
+  // Glow line
+  ctx.shadowBlur = 12;
+  ctx.shadowColor = '#00e5a0';
+  ctx.beginPath();
+  ctx.strokeStyle = '#00e5a0';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+
+  buf.forEach((v, i) => {
+    const x = (i / (MAX - 1)) * W;
+    const y = pad + (1 - (v - mn) / range) * (H - pad * 2);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Fill area
+  ctx.beginPath();
+  ctx.strokeStyle = 'transparent';
+  buf.forEach((v, i) => {
+    const x = (i / (MAX - 1)) * W;
+    const y = pad + (1 - (v - mn) / range) * (H - pad * 2);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  const lastX = ((buf.length - 1) / (MAX - 1)) * W;
+  ctx.lineTo(lastX, H - pad);
+  ctx.lineTo(0, H - pad);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(0,229,160,0.05)';
+  ctx.fill();
+
+  // Zero line
+  ctx.beginPath();
+  ctx.strokeStyle = 'rgba(0,229,160,0.1)';
+  ctx.lineWidth = 1;
+  const zy = pad + (1 - (0 - mn) / range) * (H - pad * 2);
+  ctx.moveTo(0, zy); ctx.lineTo(W, zy);
+  ctx.stroke();
+
+  // Sweep line position
+  const sx = ((buf.length - 1) / (MAX - 1)) * W;
+  document.getElementById('sweepLine').style.left = sx + 'px';
+
+  // Draw spark
+  drawSpark();
+  drawFFT();
+
+  animFrame = requestAnimationFrame(drawECG);
+}
+
+// ─── SPARKLINE ───────────────────────────────────────────────────
+function drawSpark() {
+  const W = sparkCanvas.width, H = sparkCanvas.height;
+  sCtx.clearRect(0, 0, W, H);
+  if (buf.length < 2) return;
+
+  const mn = Math.min(...buf), mx = Math.max(...buf);
+  const range = mx - mn || 1;
+  const pad = 6;
+
+  sCtx.beginPath();
+  sCtx.strokeStyle = 'rgba(0,184,255,0.7)';
+  sCtx.lineWidth = 1;
+  buf.forEach((v, i) => {
+    const x = (i / (MAX - 1)) * W;
+    const y = pad + (1 - (v - mn) / range) * (H - pad * 2);
+    i === 0 ? sCtx.moveTo(x, y) : sCtx.lineTo(x, y);
+  });
+  sCtx.stroke();
+}
+
+// ─── SIMPLE FFT BAR CHART ────────────────────────────────────────
+function drawFFT() {
+  const W = fftCanvas.width, H = fftCanvas.height;
+  if (W <= 0 || H <= 0) return;
+  fCtx.clearRect(0, 0, W, H);
+  if (buf.length < 64) return;
+
+  const N = 64;
+  const slice = buf.slice(-N);
+  const bars = 16;
+  const barW = W / bars - 2;
+
+  for (let b = 0; b < bars; b++) {
+    let sum = 0;
+    const start = Math.floor(b * N / bars);
+    const end = Math.floor((b + 1) * N / bars);
+    for (let i = start; i < end; i++) {
+      const dx = slice[i] - (slice[i - 1] || slice[i]);
+      sum += dx * dx;
+    }
+    const amp = Math.sqrt(sum / (end - start)) / 50;
+    const h = Math.min(H, amp * H * 2);
+    const x = b * (W / bars) + 1;
+    const hue = 160 + b * 8;
+    fCtx.fillStyle = `hsl(${hue}, 80%, 55%)`;
+    fCtx.fillRect(x, H - h, barW, h);
+  }
+}
+
+// ─── DEMO ────────────────────────────────────────────────────────
+function demoTick() {
+  const t = Date.now() / 1000;
+  const speed = parseFloat(document.getElementById('speedSel').value) || 1;
+  const v = Math.round(
+    512 +
+    200 * Math.sin(t * 1.5 * speed) +
+    80  * Math.sin(t * 9 * speed) +
+    30  * Math.sin(t * 15 * speed) +
+    (Math.random() - 0.5) * 20
+  );
+  addPoint(v);
+  demoTimer = setTimeout(demoTick, 16);
+}
+
+function toggleDemo() {
+  demoMode = !demoMode;
+  if (demoMode) {
+    demoTick();
+    setStatus('demo');
+    log('Demo mode enabled', 'warn');
+  } else {
+    clearTimeout(demoTimer);
+    log('Demo mode disabled', 'info');
+  }
+}
+
+// ─── WEBSOCKET ───────────────────────────────────────────────────
+function toggleConnect() {
+  if (connected) {
+    ws && ws.close();
+    return;
+  }
+  const url = document.getElementById('wsUrl').value.trim();
+  try {
+    ws = new WebSocket(url);
+    ws.onopen = () => {
+      connected = true;
+      demoMode = false;
+      clearTimeout(demoTimer);
+      setStatus('connected');
+      document.getElementById('connectBtn').textContent = 'Disconnect';
+      document.getElementById('connectBtn').classList.add('active');
+      log('Connected → ' + url, 'ok');
+    };
+    ws.onmessage = e => addPoint(e.data.trim());
+    ws.onerror = () => log('Connection error. Is bridge running?', 'err');
+    ws.onclose = () => {
+      connected = false;
+      setStatus('disconnected');
+      document.getElementById('connectBtn').textContent = 'Connect';
+      document.getElementById('connectBtn').classList.remove('active');
+      log('Disconnected from bridge', 'warn');
+    };
+  } catch(e) { log('Invalid WebSocket URL', 'err'); }
+}
+
+// ─── STATUS ──────────────────────────────────────────────────────
+function setStatus(s) {
+  const pill = document.getElementById('statusPill');
+  const txt = document.getElementById('statusText');
+  pill.className = 'status-pill ' + s;
+  txt.textContent = s.toUpperCase();
+}
+
+// ─── RECORD ──────────────────────────────────────────────────────
+function toggleRecord() {
+  recording = !recording;
+  const btn = document.getElementById('recordBtn');
+  if (recording) {
+    recordedData = [];
+    btn.classList.add('recording');
+    btn.textContent = '■ Stop';
+    log('Recording started [' + currentLabel.toUpperCase() + ']', 'ok');
+    document.getElementById('footRecording').textContent = 'REC: ON ●';
+  } else {
+    btn.classList.remove('recording');
+    btn.textContent = '● Rec';
+    log('Recording stopped. ' + recordedData.length + ' pts saved.', 'warn');
+    document.getElementById('footRecording').textContent = 'REC: OFF';
+    if (recordedData.length > 0) exportCSV();
+  }
+}
+
+function exportCSV() {
+  const rows = ['timestamp,raw_ecg,label', ...recordedData.map(d => `${d.t},${d.v},${d.label}`)];
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `ecg_${currentLabel}_${Date.now()}.csv`;
+  a.click();
+  log('CSV exported: ecg_' + currentLabel + '_' + Date.now() + '.csv', 'ok');
+}
+
+// ─── LABEL ───────────────────────────────────────────────────────
+function setLabel(label) {
+  currentLabel = label;
+  ['stress', 'relaxed', 'normal'].forEach(l => {
+    document.getElementById('lbl-' + l).className = 'label-btn ' + l + (l === label ? ' active' : '');
+  });
+  document.getElementById('footLabel').textContent = 'LABEL: ' + label.toUpperCase();
+  log('Label set → ' + label.toUpperCase(), 'info');
+}
+
+// ─── CONTROLS ────────────────────────────────────────────────────
+function updateWindow() {
+  MAX = parseInt(document.getElementById('windowSel').value);
+  while (buf.length > MAX) buf.shift();
+}
+
+function clearAll() {
+  buf = []; peak = -Infinity; minVal = Infinity; totalSamples = 0;
+  document.getElementById('vCurrent').textContent = '—';
+  document.getElementById('vPeak').textContent = '—';
+  document.getElementById('vMin').textContent = '—';
+  document.getElementById('vTotal').textContent = '0';
+  log('Display cleared', 'warn');
+}
+
+// ─── ALERT ───────────────────────────────────────────────────────
+function showAlert(msg) {
+  const b = document.getElementById('alertBanner');
+  b.textContent = msg;
+  b.style.display = 'block';
+  setTimeout(() => { b.style.display = 'none'; }, 3000);
+}
+
+// ─── BOOT ────────────────────────────────────────────────────────
+log('VitalSence ECG Monitor v1.0 ready', 'ok');
+log('WebSocket bridge: ws://localhost:8765', 'info');
+log('Running in DEMO mode', 'warn');
+log('Click Connect after starting bridge', 'info');
+
+demoTick();
+drawECG();
+</script>
+</body>
+</html>

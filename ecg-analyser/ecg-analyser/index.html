@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ECG Analyser</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div class="page-bg">
+    <div class="container">
+
+      <!-- Header -->
+      <header class="header">
+        <div class="header-icon">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <path d="M2 14 L6 14 L8 8 L11 20 L14 4 L17 22 L20 12 L22 14 L26 14"
+              stroke="#1D9E75" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="header-title">ECG Analyser</h1>
+          <p class="header-sub">Enter vitals and paste ECG signal to receive a diagnosis</p>
+        </div>
+      </header>
+
+      <!-- Vitals Section -->
+      <section>
+        <p class="section-label">Vital Signs</p>
+        <div class="vitals-grid">
+          <div class="vital-card">
+            <label for="hr">Heart Rate</label>
+            <input type="number" id="hr" value="72" min="20" max="250" />
+            <span class="unit">bpm</span>
+          </div>
+          <div class="vital-card">
+            <label for="spo2">SpO2</label>
+            <input type="number" id="spo2" value="98" min="50" max="100" />
+            <span class="unit">%</span>
+          </div>
+          <div class="vital-card">
+            <label for="rr">Resp. Rate</label>
+            <input type="number" id="rr" value="16" min="4" max="60" />
+            <span class="unit">br/min</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ECG Signal Section -->
+      <section>
+        <p class="section-label">ECG Signal</p>
+        <div class="signal-card">
+          <textarea
+            id="ecg-signal"
+            placeholder="Paste 300 comma-separated ECG values here…&#10;e.g. 0.12, -0.05, 0.33, 0.87, 1.24, 0.55, -0.10, ..."
+          ></textarea>
+          <div class="signal-footer">
+            <span class="signal-meta" id="signal-meta">0 / 300 values entered</span>
+            <button class="demo-btn" id="demo-btn">Load demo signal</button>
+          </div>
+          <p class="error-msg" id="signal-error">Please enter at least 10 numeric ECG values.</p>
+        </div>
+      </section>
+
+      <!-- Analyse Button -->
+      <button class="analyze-btn" id="analyze-btn">
+        <span id="btn-text">Analyse ECG</span>
+        <span id="btn-loader" class="btn-loader hidden">Analysing…</span>
+      </button>
+
+      <!-- Result Card -->
+      <div class="result-card hidden" id="result-card">
+        <svg class="waveform" id="waveform-svg" viewBox="0 0 600 60" preserveAspectRatio="none"></svg>
+        <hr class="divider" />
+        <div class="result-header">
+          <span class="result-badge" id="result-badge"></span>
+          <p class="result-status" id="result-status"></p>
+        </div>
+        <p class="result-sub" id="result-sub"></p>
+        <div class="result-details" id="result-details"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="js/ecg.js"></script>
+</body>
+</html>
