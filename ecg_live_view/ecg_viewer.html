@@ -141,7 +141,7 @@
   /* ─── LAYOUT ─── */
   .container {
     display: grid;
-    grid-template-columns: 220px 1fr 220px;
+    grid-template-columns: 1fr;
     grid-template-rows: auto auto auto;
     gap: 1px;
     background: var(--border);
@@ -166,9 +166,9 @@
 
   /* ─── VITALS SIDEBAR ─── */
   .sidebar-left {
+    display: none;
     grid-column: 1;
     grid-row: 1 / 4;
-    display: flex;
     flex-direction: column;
     gap: 1px;
     background: var(--border);
@@ -245,7 +245,7 @@
 
   /* ─── MAIN ECG ─── */
   .main-area {
-    grid-column: 2;
+    grid-column: 1;
     grid-row: 1 / 4;
     display: flex;
     flex-direction: column;
@@ -419,9 +419,9 @@
 
   /* ─── RIGHT SIDEBAR ─── */
   .sidebar-right {
+    display: none;
     grid-column: 3;
     grid-row: 1 / 4;
-    display: flex;
     flex-direction: column;
     background: var(--border);
     gap: 1px;
@@ -549,7 +549,7 @@
 
   /* Footer */
   footer {
-    grid-column: 1 / 4;
+    grid-column: 1 / 2;
     background: var(--bg2);
     border-top: 1px solid var(--border);
     padding: 0.5rem 2rem;
@@ -608,7 +608,7 @@
           stroke="#00e5a0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
-    <div class="logo-text">Aura<span>Pulse</span></div>
+    <div class="logo-text">VitalSence</div>
   </div>
   <div class="header-right">
     <div class="time-display">SYS TIME &nbsp;<span id="clock">--:--:--</span></div>
@@ -825,14 +825,16 @@ updateClock();
 
 // ─── LOG ─────────────────────────────────────────────────────────
 function log(msg, type='info') {
-  const entries = document.getElementById('logEntries');
-  const t = new Date().toTimeString().slice(0,8);
-  const div = document.createElement('div');
-  div.className = 'log-entry ' + type;
-  div.innerHTML = `<span class="log-time">${t}</span><span class="log-msg">${msg}</span>`;
-  entries.appendChild(div);
-  entries.scrollTop = entries.scrollHeight;
-  if (entries.children.length > 60) entries.removeChild(entries.firstChild);
+  // Sidebar log hidden - console output only
+  console.log(`[${type.toUpperCase()}] ${msg}`);
+  // const entries = document.getElementById('logEntries');
+  // const t = new Date().toTimeString().slice(0,8);
+  // const div = document.createElement('div');
+  // div.className = 'log-entry ' + type;
+  // div.innerHTML = `<span class="log-time">${t}</span><span class="log-msg">${msg}</span>`;
+  // entries.appendChild(div);
+  // entries.scrollTop = entries.scrollHeight;
+  // if (entries.children.length > 60) entries.removeChild(entries.firstChild);
 }
 
 // ─── DATA POINT ──────────────────────────────────────────────────
@@ -853,19 +855,20 @@ function addPoint(v) {
   const now = Date.now();
   if (now - lastSecond >= 1000) {
     sps = spsCount; spsCount = 0; lastSecond = now;
-    document.getElementById('vSps').textContent = sps;
-    document.getElementById('barSps').style.width = Math.min(100, sps / 2) + '%';
+    // Sidebar hidden - vitals display disabled
+    // document.getElementById('vSps').textContent = sps;
+    // document.getElementById('barSps').style.width = Math.min(100, sps / 2) + '%';
   }
 
-  // Update vitals
-  document.getElementById('vCurrent').textContent = v;
-  document.getElementById('barCurrent').style.width = (v / 1023 * 100) + '%';
-  document.getElementById('vPeak').textContent = peak === -Infinity ? '—' : peak;
-  document.getElementById('barPeak').style.width = peak === -Infinity ? '0%' : (peak / 1023 * 100) + '%';
-  document.getElementById('vMin').textContent = minVal === Infinity ? '—' : minVal;
-  document.getElementById('barMin').style.width = minVal === Infinity ? '0%' : (minVal / 1023 * 100) + '%';
-  document.getElementById('vTotal').textContent = totalSamples.toLocaleString();
-  document.getElementById('footSamples').textContent = 'SAMPLES: ' + totalSamples.toLocaleString();
+  // Sidebar hidden - vitals display disabled
+  // document.getElementById('vCurrent').textContent = v;
+  // document.getElementById('barCurrent').style.width = (v / 1023 * 100) + '%';
+  // document.getElementById('vPeak').textContent = peak === -Infinity ? '—' : peak;
+  // document.getElementById('barPeak').style.width = peak === -Infinity ? '0%' : (peak / 1023 * 100) + '%';
+  // document.getElementById('vMin').textContent = minVal === Infinity ? '—' : minVal;
+  // document.getElementById('barMin').style.width = minVal === Infinity ? '0%' : (minVal / 1023 * 100) + '%';
+  // document.getElementById('vTotal').textContent = totalSamples.toLocaleString();
+  // document.getElementById('footSamples').textContent = 'SAMPLES: ' + totalSamples.toLocaleString();
 }
 
 // ─── DRAW ECG ────────────────────────────────────────────────────
@@ -1080,11 +1083,9 @@ function exportCSV() {
 // ─── LABEL ───────────────────────────────────────────────────────
 function setLabel(label) {
   currentLabel = label;
-  ['stress', 'relaxed', 'normal'].forEach(l => {
-    document.getElementById('lbl-' + l).className = 'label-btn ' + l + (l === label ? ' active' : '');
-  });
-  document.getElementById('footLabel').textContent = 'LABEL: ' + label.toUpperCase();
-  log('Label set → ' + label.toUpperCase(), 'info');
+  // Sidebar hidden - label buttons removed
+  // document.getElementById('footLabel').textContent = 'LABEL: ' + label.toUpperCase();
+  // log('Label set → ' + label.toUpperCase(), 'info');
 }
 
 // ─── CONTROLS ────────────────────────────────────────────────────
@@ -1095,10 +1096,11 @@ function updateWindow() {
 
 function clearAll() {
   buf = []; peak = -Infinity; minVal = Infinity; totalSamples = 0;
-  document.getElementById('vCurrent').textContent = '—';
-  document.getElementById('vPeak').textContent = '—';
-  document.getElementById('vMin').textContent = '—';
-  document.getElementById('vTotal').textContent = '0';
+  // Sidebar hidden - vitals display disabled
+  // document.getElementById('vCurrent').textContent = '—';
+  // document.getElementById('vPeak').textContent = '—';
+  // document.getElementById('vMin').textContent = '—';
+  // document.getElementById('vTotal').textContent = '0';
   log('Display cleared', 'warn');
 }
 

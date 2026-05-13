@@ -1,9 +1,6 @@
-    # Artificial-Intelligent-project 
-    #VitalSence
-
 # ECG Arrhythmia Detection Pipeline (CNN + ML + Hybrid Model)
 
-## 📌 Overview
+##  Overview
 
 This project implements an end-to-end ECG signal processing and
 classification pipeline using: - Traditional Machine Learning (Random
@@ -14,14 +11,14 @@ The goal is to classify ECG beats into: - Normal (N) - Arrhythmia
 
 ------------------------------------------------------------------------
 
-## 📂 Dataset
+##  Dataset
 
 -   MIT-BIH Arrhythmia Dataset
 -   Loaded using `wfdb`
 
 ------------------------------------------------------------------------
 
-## ⚙️ Features
+##  Features
 
 -   ECG signal visualization
 -   R-peak based segmentation
@@ -31,7 +28,7 @@ The goal is to classify ECG beats into: - Normal (N) - Arrhythmia
 
 ------------------------------------------------------------------------
 
-## 🧠 Models Used
+##  Models Used
 
 ### 1. Random Forest
 
@@ -57,7 +54,7 @@ pip install numpy matplotlib wfdb scikit-learn tensorflow pandas
 
 ------------------------------------------------------------------------
 
-## 🚀 Usage
+##  Usage
 
 ### 1. Load ECG Data
 
@@ -85,7 +82,7 @@ f1_score(y_test, y_pred)
 
 ------------------------------------------------------------------------
 
-## 📊 Model Comparison
+##  Model Comparison
 
 -   Accuracy
 -   F1 Score
@@ -124,7 +121,7 @@ f1_score(y_test, y_pred)
 
 ------------------------------------------------------------------------
 
-## ⚠️ Notes
+##  Notes
 
 -   Ensure proper ECG segmentation
 -   Dataset imbalance can affect performance
@@ -132,7 +129,7 @@ f1_score(y_test, y_pred)
 
 ------------------------------------------------------------------------
 
-## 🔮 Future Improvements
+##  Future Improvements
 
 -   Multi-class classification
 -   Attention-based models
@@ -141,7 +138,7 @@ f1_score(y_test, y_pred)
 
 ------------------------------------------------------------------------
 
-## 👨‍💻 Author
+##  Author
 
 Project developed as part of AI/ML and Biomedical Signal Processing
 exploration.
